@@ -1,16 +1,12 @@
 from PySide6.QtWidgets import QGraphicsView
 from PySide6.QtGui import QColor, QPainter, QPen, QTransform
 from PySide6.QtCore import Qt, QRectF
-
 from view.Settings import Settings
 from view.EditorScene import EditorScene
-from model.FactoryLayout import FactoryLayout
 
 class EditorView(QGraphicsView):
-    def __init__(self, layout: FactoryLayout):
+    def __init__(self, scene: EditorScene):
         super().__init__()
-
-        scene = EditorScene(self, layout)
         self.setScene(scene)
 
         self.setBackgroundBrush(QColor("#202020"))
@@ -26,7 +22,7 @@ class EditorView(QGraphicsView):
         self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
 
         self._zoom = 0
-        self._zoom_range = (-100, 200)
+        self._zoom_range = (-12, 5)
         self._isPanning = False
         self._panStart = None
 

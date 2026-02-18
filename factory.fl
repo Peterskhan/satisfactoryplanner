@@ -2,32 +2,16 @@
   {
     "type": "Constructor",
     "position": {
-      "x": 8,
-      "y": 8
+      "x": -10,
+      "y": 2
     },
-    "rotation": 1
+    "rotation": 0
   },
   {
     "type": "Constructor",
     "position": {
-      "x": -8,
-      "y": 8
-    },
-    "rotation": 2
-  },
-  {
-    "type": "Constructor",
-    "position": {
-      "x": -8,
-      "y": -8
-    },
-    "rotation": 3
-  },
-  {
-    "type": "Constructor",
-    "position": {
-      "x": 8,
-      "y": -8
+      "x": -10,
+      "y": 2
     },
     "rotation": 0
   }
