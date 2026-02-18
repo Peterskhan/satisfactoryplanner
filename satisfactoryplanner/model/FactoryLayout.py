@@ -28,9 +28,28 @@ class BuildingInstance:
     rotation: Rotation
 
     def __init__(self, type: BuildingType, position: Position, rotation: Rotation) -> None:
+        """Initialize a building instance with a type, position, and rotation."""
         self.type = type
         self.position = position
         self.rotation = rotation
+
+    def translate(self, dx: int, dy: int) -> None:
+        """Move the building by dx and dy."""
+        self.position.x += dx
+        self.position.y += dy
+
+    def move_to(self, x: int, y: int) -> None:
+        """Move the building to a specific position."""
+        self.position.x = x
+        self.position.y = y
+
+    def rotate_clockwise(self) -> None:
+        """Rotate the building 90 degrees clockwise."""
+        self.rotation = self.rotation.rotate_clockwise()
+
+    def rotate_counterclockwise(self) -> None:
+        """Rotate the building 90 degrees counterclockwise."""
+        self.rotation = self.rotation.rotate_counterclockwise()
 
     def to_dict(self) -> dict:
         return {
@@ -47,7 +66,7 @@ class BuildingInstance:
         rot = Rotation(data["rotation"])
         return cls(type_obj, pos, rot)
 
-class LayoutModel:
+class FactoryLayout:
 
     def __init__(self):
         self.buildings = []
@@ -55,7 +74,6 @@ class LayoutModel:
     def add_building(self, type: BuildingType, position: Position, rotation: Rotation) -> BuildingInstance:
         instance = BuildingInstance(type, position, rotation)
         self.buildings.append(instance)
-        self.serialize()
         return instance
 
     def create_building(self, type: BuildingType, position: Position, rotation: Rotation) -> BuildingInstance:
@@ -63,7 +81,6 @@ class LayoutModel:
 
     def remove_building(self, instance: BuildingInstance) -> None:
         self.buildings.remove(instance)
-        self.serialize()
 
     def buildings(self) -> list[BuildingInstance]:
         return list(self.buildings)
@@ -71,7 +88,6 @@ class LayoutModel:
     def serialize(self) -> str:
         data = [b.to_dict() for b in self.buildings]
         result = json.dumps(data, indent=2)
-        print(result)
         return result
 
     def deserialize(self, json_str: str, type_lookup: dict):

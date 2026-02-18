@@ -3,8 +3,7 @@
  - Ctrl + V
  - Ctrl + X
  - Draw Conveyor
- - Rotation
 
 ### Code TODO
- - Modules & Relative includes
- - Signals 
+ - Signals
+ - Fix placement (update item from modified model)

@@ -1,6 +1,6 @@
 import sys
 from PySide6.QtWidgets import QApplication
-from satisfactoryplanner.view.MainWindow import MainWindow
+from view.MainWindow import MainWindow
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

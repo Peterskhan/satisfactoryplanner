@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 from collections import defaultdict
 from PySide6.QtCore import Qt, Signal
-from ..view.CategorySectionWidget import CategorySectionWidget
+from view.CategorySectionWidget import CategorySectionWidget
 
 class BuildingPaletteWidget(QWidget):
     building_selected = Signal(object)

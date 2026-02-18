@@ -1,16 +1,16 @@
 from PySide6.QtWidgets import QGraphicsView
-from PySide6.QtGui import QColor, QPainter, QPen, QMouseEvent, QTransform
-from PySide6.QtCore import Qt, QRectF, QPointF, QEvent
+from PySide6.QtGui import QColor, QPainter, QPen, QTransform
+from PySide6.QtCore import Qt, QRectF
 
-from ..view.Settings import Settings
-from ..view.EditorScene import EditorScene
-from ..model.LayoutModel import LayoutModel
+from view.Settings import Settings
+from view.EditorScene import EditorScene
+from model.FactoryLayout import FactoryLayout
 
 class EditorView(QGraphicsView):
-    def __init__(self, layout_model: LayoutModel):
+    def __init__(self, layout: FactoryLayout):
         super().__init__()
 
-        scene = EditorScene(self, layout_model)
+        scene = EditorScene(self, layout)
         self.setScene(scene)
 
         self.setBackgroundBrush(QColor("#202020"))
@@ -131,7 +131,7 @@ class EditorView(QGraphicsView):
 
         from PySide6.QtGui import QBrush, QPixmap
 
-        pix = QPixmap("./satisfactoryplanner/resources/StorageContainer.png")
+        pix = QPixmap("./resources/StorageContainer.png")
         pen = QPen()
         pen.setWidth(10)
         brush = QBrush(pix)

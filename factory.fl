@@ -2,113 +2,33 @@
   {
     "type": "Constructor",
     "position": {
-      "x": 800,
-      "y": -1000
+      "x": 8,
+      "y": 8
     },
-    "rotation": 0
+    "rotation": 1
   },
   {
     "type": "Constructor",
     "position": {
-      "x": 1800,
-      "y": -1000
-    },
-    "rotation": 0
-  },
-  {
-    "type": "Constructor",
-    "position": {
-      "x": 2800,
-      "y": -1000
-    },
-    "rotation": 0
-  },
-  {
-    "type": "Constructor",
-    "position": {
-      "x": 3800,
-      "y": -1000
-    },
-    "rotation": 0
-  },
-  {
-    "type": "Splitter",
-    "position": {
-      "x": 1400,
-      "y": -1500
-    },
-    "rotation": 1
-  },
-  {
-    "type": "Splitter",
-    "position": {
-      "x": 2400,
-      "y": -1500
-    },
-    "rotation": 1
-  },
-  {
-    "type": "Splitter",
-    "position": {
-      "x": 3400,
-      "y": -1500
-    },
-    "rotation": 1
-  },
-  {
-    "type": "Splitter",
-    "position": {
-      "x": 4400,
-      "y": -1500
-    },
-    "rotation": 1
-  },
-  {
-    "type": "Merger",
-    "position": {
-      "x": 1400,
-      "y": 100
-    },
-    "rotation": 1
-  },
-  {
-    "type": "Merger",
-    "position": {
-      "x": 2400,
-      "y": 100
-    },
-    "rotation": 1
-  },
-  {
-    "type": "Merger",
-    "position": {
-      "x": 3400,
-      "y": 100
-    },
-    "rotation": 1
-  },
-  {
-    "type": "Merger",
-    "position": {
-      "x": 4400,
-      "y": 100
-    },
-    "rotation": 1
-  },
-  {
-    "type": "Coal Generator",
-    "position": {
-      "x": 3400,
-      "y": 800
-    },
-    "rotation": 1
-  },
-  {
-    "type": "Coal Generator",
-    "position": {
-      "x": 5800,
-      "y": -1600
+      "x": -8,
+      "y": 8
     },
     "rotation": 2
+  },
+  {
+    "type": "Constructor",
+    "position": {
+      "x": -8,
+      "y": -8
+    },
+    "rotation": 3
+  },
+  {
+    "type": "Constructor",
+    "position": {
+      "x": 8,
+      "y": -8
+    },
+    "rotation": 0
   }
 ]

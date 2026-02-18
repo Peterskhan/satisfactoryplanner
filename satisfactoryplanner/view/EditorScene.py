@@ -1,9 +1,9 @@
 from PySide6.QtWidgets import QGraphicsScene, QFileDialog
-from PySide6.QtCore import Qt, QPointF, QRectF
-from ..view.Settings import Settings
-from ..view.BuildingItem import BuildingItem
-from ..model.building import BuildingType
-from ..model.LayoutModel import LayoutModel, Position, Rotation, type_lookup
+from PySide6.QtCore import Qt, QPointF, Signal
+from view.Settings import Settings
+from view.BuildingItem import BuildingItem
+from model.building import BuildingType
+from model.FactoryLayout import FactoryLayout, Position, Rotation, type_lookup
 from enum import Enum
 
 class SceneOperation(Enum):
@@ -14,61 +14,69 @@ class EditorScene(QGraphicsScene):
     """The graphical representation of the factory editor's world."""
 
     operation: SceneOperation
-    current_building_type: BuildingType
-    ghost_item: BuildingItem
+    preview_item: BuildingItem
 
-    def __init__(self, parent, layout_model: LayoutModel):
+    def __init__(self, parent, layout: FactoryLayout):
         super().__init__(parent)
         self.setSceneRect(-10000, -10000, 20000, 20000)
-        self.current_building_type = None
-        self.ghost_item = None
-        self.layout_model = layout_model
+        self.preview_item = None
+        self.layout = layout
         self.save_file = None
         self.operation = None
         self.last_mouse_scene_pos = None
 
     ## ======================================================
+    ## Signals
+    ## ====================================================== 
+
+    mouse_scene_position_changed = Signal(str)
+
+    ## ======================================================
     ## Slots
     ## ====================================================== 
 
-    def set_current_building(self, building_type):
-        self.current_building_type = building_type
+    def set_preview_type(self, building_type: BuildingType):
         self.operation = SceneOperation.BUILDING_PLACEMENT
 
         # This is a hack, because the view does not have focus to handle rotation events
         self.views()[0].setFocus()
-        self.create_ghost()
+        self.set_preview(building_type)
 
     ## ======================================================
     ## Helper methods
     ## ======================================================
 
-    def _place_building(self, pos):
-        grid = Settings.PIXELS_PER_METER
-        x = round(pos.x() / grid) * grid
-        y = round(pos.y() / grid) * grid
+    def scene_to_world(self, scene_pos: QPointF) -> Position:
+        return Position(scene_pos.x() / Settings.PIXELS_PER_METER, 
+                        scene_pos.y() / Settings.PIXELS_PER_METER)
+    
+    def scene_to_world_snapped(self, scene_pos: QPointF) -> Position:
+        x = round(scene_pos.x() / Settings.PIXELS_PER_METER)
+        y = round(scene_pos.y() / Settings.PIXELS_PER_METER)
+        return Position(x, y)
 
-        instance = self.layout_model.add_building(
-            self.current_building_type,
-            Position(x, y),
-            self.ghost_item.instance.rotation
+    def place_building(self):
+        instance = self.layout.add_building(
+            self.preview_item.instance.type,
+            self.preview_item.instance.position,
+            self.preview_item.instance.rotation
         )
         self.addItem(BuildingItem(instance))
 
-    def create_ghost(self):
-        if self.ghost_item:
-            self.removeItem(self.ghost_item)
+    def set_preview(self, building_type: BuildingType):
+        if self.preview_item:
+            self.removeItem(self.preview_item)
 
-        self.ghost_item = BuildingItem(self.layout_model.create_building(self.current_building_type, Position(0, 0), Rotation.DEG_0))
-        self.ghost_item.setOpacity(0.4)
-        self.ghost_item.setZValue(9999)  # always on top
+        self.preview_item = BuildingItem(self.layout.create_building(building_type, Position(0, 0), Rotation.DEG_0))
+        self.preview_item.setOpacity(0.4)
+        self.preview_item.setZValue(9999)  # always on top
 
-        self.addItem(self.ghost_item)
+        self.addItem(self.preview_item)
 
     def rotate_preview(self):
-        self.ghost_item.instance.rotation = self.ghost_item.instance.rotation.rotate_clockwise()
-        self.ghost_item.setRotation(self.ghost_item.instance.rotation.value * 90)
+        self.preview_item.instance.rotate_clockwise()
         self.snap_preview_to_cursor()
+        self.preview_item.update()
 
     def calculate_rotated_offset(self, item: BuildingItem) -> QPointF:
         if item.instance.rotation == Rotation.DEG_0:
@@ -81,13 +89,14 @@ class EditorScene(QGraphicsScene):
             return QPointF(item.instance.type.length, -item.instance.type.width) * Settings.PIXELS_PER_METER / 2.0
 
     def snap_preview_to_cursor(self):
-        if self.ghost_item is not None:
-            offset = self.calculate_rotated_offset(self.ghost_item)
-            self.ghost_item.setPos(self.last_mouse_scene_pos - offset)
+        if self.preview_item is not None:
+            offset = self.calculate_rotated_offset(self.preview_item)
+            snapped = self.scene_to_world_snapped(self.last_mouse_scene_pos - offset)
+            self.preview_item.instance.move_to(snapped.x, snapped.y)
 
     def delete_current_selection(self):
         for item in self.selectedItems():
-            self.layout_model.remove_building(item.instance)
+            self.layout.remove_building(item.instance)
             self.removeItem(item)
 
     def select_all_items(self):
@@ -103,6 +112,12 @@ class EditorScene(QGraphicsScene):
     def paste_current_selection(self):
         pass
 
+    def rotate_current_selection(self):
+        for item in self.selectedItems():
+            if isinstance(item, BuildingItem):
+                item.instance.rotate_clockwise()
+                item.update()
+
     def save_layout_to_file(self):
         if self.save_file is None:
             self.save_file, _ = QFileDialog.getSaveFileName(
@@ -116,7 +131,7 @@ class EditorScene(QGraphicsScene):
             return
         
         with open(self.save_file, mode='w') as save_file:
-            save_file.write(self.layout_model.serialize())
+            save_file.write(self.layout.serialize())
 
     def load_layout_from_file(self):
         file_name, _ = QFileDialog.getOpenFileName(
@@ -131,14 +146,14 @@ class EditorScene(QGraphicsScene):
         
         with open(file_name, mode='r') as load_file:
             json_str = load_file.read()
-            self.layout_model.deserialize(json_str, type_lookup)
+            self.layout.deserialize(json_str, type_lookup)
 
         # Clear existing items
         for item in self.items():
             self.removeItem(item)
 
         # Add items from the loaded layout
-        for building in self.layout_model.buildings:
+        for building in self.layout.buildings:
             self.addItem(BuildingItem(building))
 
     ## ======================================================
@@ -147,23 +162,29 @@ class EditorScene(QGraphicsScene):
 
     def mousePressEvent(self, event):
         if self.operation == SceneOperation.BUILDING_PLACEMENT:
-            if event.button() == Qt.LeftButton and self.current_building_type is not None:
-                offset = self.calculate_rotated_offset(self.ghost_item)
-                self._place_building(self.last_mouse_scene_pos - offset)
+            if event.button() == Qt.LeftButton and self.preview_item:
+                self.place_building()
 
-            elif event.button() == Qt.RightButton and self.current_building_type is not None:
-                self.current_building_type = None
-                if self.ghost_item:
-                    self.removeItem(self.ghost_item)
-                self.ghost_item = None
+            elif event.button() == Qt.RightButton and self.preview_item:
+                if self.preview_item:
+                    self.removeItem(self.preview_item)
+                self.preview_item = None
                 self.operation = None
         
         else:
             super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        scene_pos = event.scenePos()
+        world_pos = self.scene_to_world(scene_pos)
+        snapped_world_pos = self.scene_to_world_snapped(scene_pos)
+        self.mouse_scene_position_changed.emit(f'Scene Position: ({scene_pos.x():.2f}, {scene_pos.y():.2f}) '
+                                               f'World Position: ({world_pos.x:.2f}, {world_pos.y:.2f}) '
+                                               f'Snapped World Position: ({snapped_world_pos.x}, {snapped_world_pos.y})')
         self.last_mouse_scene_pos = event.scenePos()
-        self.snap_preview_to_cursor()
+        if self.preview_item:
+            self.snap_preview_to_cursor()
+            self.preview_item.update()
         super().mouseMoveEvent(event)
 
     def keyPressEvent(self, event):
@@ -181,7 +202,10 @@ class EditorScene(QGraphicsScene):
             self.save_layout_to_file()
         elif event.key() == Qt.Key.Key_O and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
             self.load_layout_from_file()
-        elif self.operation == SceneOperation.BUILDING_PLACEMENT and event.key() == Qt.Key.Key_R:
-            self.rotate_preview()
+        elif event.key() == Qt.Key.Key_R:
+            if self.operation == SceneOperation.BUILDING_PLACEMENT:
+                self.rotate_preview()
+            else:
+                self.rotate_current_selection()
         else:
             super().keyPressEvent(event)

@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QGraphicsPixmapItem
 from PySide6.QtCore import QPointF
 
-from ..view.Settings import Settings
+from view.Settings import Settings
 
 class DraggableRectItem(QGraphicsPixmapItem):
     GRID_SIZE = Settings.PIXELS_PER_METER
