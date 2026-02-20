@@ -1,9 +1,6 @@
 ### Feature TODO
- - Ctrl + C
- - Ctrl + V
- - Ctrl + X
  - Draw Conveyor
 
 ### Code TODO
+ - Fix half-meter placement
  - Signals
- - Fix placement (update item from modified model)

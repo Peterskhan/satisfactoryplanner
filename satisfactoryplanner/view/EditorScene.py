@@ -1,9 +1,10 @@
-from PySide6.QtWidgets import QGraphicsScene, QFileDialog
+from PySide6.QtWidgets import QGraphicsScene, QFileDialog, QGraphicsColorizeEffect
 from PySide6.QtCore import Qt, QPointF, Signal
+from PySide6.QtGui import QColor
 from view.Settings import Settings
 from view.BuildingItem import BuildingItem
-from model.building import BuildingType
-from model.FactoryLayout import FactoryLayout, Position, Rotation, type_lookup
+from model.BuldingInstance import BuildingInstance, BuildingType, Position, Rotation
+from model.FactoryLayout import FactoryLayout, type_lookup
 from enum import Enum
 
 class SceneOperation(Enum):
@@ -13,6 +14,7 @@ class SceneOperation(Enum):
 class EditorScene(QGraphicsScene):
     """The graphical representation of the factory editor's world."""
 
+    layout: FactoryLayout
     operation: SceneOperation
     preview_item: BuildingItem
 
@@ -24,6 +26,7 @@ class EditorScene(QGraphicsScene):
         self.save_file = None
         self.operation = None
         self.last_mouse_scene_pos = None
+        self.clipboard_layout = None
 
     ## ======================================================
     ## Signals
@@ -42,58 +45,6 @@ class EditorScene(QGraphicsScene):
         self.views()[0].setFocus()
         self.set_preview(building_type)
 
-    ## ======================================================
-    ## Helper methods
-    ## ======================================================
-
-    def scene_to_world(self, scene_pos: QPointF) -> Position:
-        return Position(scene_pos.x() / Settings.PIXELS_PER_METER, 
-                        scene_pos.y() / Settings.PIXELS_PER_METER)
-    
-    def scene_to_world_snapped(self, scene_pos: QPointF) -> Position:
-        x = round(scene_pos.x() / Settings.PIXELS_PER_METER)
-        y = round(scene_pos.y() / Settings.PIXELS_PER_METER)
-        return Position(x, y)
-
-    def place_building(self):
-        instance = self.layout.add_building(
-            self.preview_item.instance.type,
-            self.preview_item.instance.position,
-            self.preview_item.instance.rotation
-        )
-        self.addItem(BuildingItem(instance))
-
-    def set_preview(self, building_type: BuildingType):
-        if self.preview_item:
-            self.removeItem(self.preview_item)
-
-        self.preview_item = BuildingItem(self.layout.create_building(building_type, Position(0, 0), Rotation.DEG_0))
-        self.preview_item.setOpacity(0.4)
-        self.preview_item.setZValue(9999)  # always on top
-
-        self.addItem(self.preview_item)
-
-    def rotate_preview(self):
-        self.preview_item.instance.rotate_clockwise()
-        self.snap_preview_to_cursor()
-        self.preview_item.update()
-
-    def calculate_rotated_offset(self, item: BuildingItem) -> QPointF:
-        if item.instance.rotation == Rotation.DEG_0:
-            return QPointF(item.instance.type.width, item.instance.type.length) * Settings.PIXELS_PER_METER / 2.0
-        elif item.instance.rotation == Rotation.DEG_90:
-            return QPointF(-item.instance.type.length, item.instance.type.width) * Settings.PIXELS_PER_METER / 2.0
-        elif item.instance.rotation == Rotation.DEG_180:
-            return QPointF(-item.instance.type.width, -item.instance.type.length) * Settings.PIXELS_PER_METER / 2.0
-        else:
-            return QPointF(item.instance.type.length, -item.instance.type.width) * Settings.PIXELS_PER_METER / 2.0
-
-    def snap_preview_to_cursor(self):
-        if self.preview_item is not None:
-            offset = self.calculate_rotated_offset(self.preview_item)
-            snapped = self.scene_to_world_snapped(self.last_mouse_scene_pos - offset)
-            self.preview_item.instance.move_to(snapped.x, snapped.y)
-
     def delete_current_selection(self):
         for item in self.selectedItems():
             self.layout.remove_building(item.instance)
@@ -104,13 +55,23 @@ class EditorScene(QGraphicsScene):
             item.setSelected(True)
 
     def copy_current_selection(self):
-        pass
-
+        self.clipboard_layout = FactoryLayout.create_from_buildings([item.instance for item in self.selectedItems()])
+        
     def cut_current_selection(self):
-        pass
+        self.clipboard_layout = FactoryLayout.create_from_buildings([item.instance for item in self.selectedItems()])
+        self.delete_current_selection()
 
     def paste_current_selection(self):
-        pass
+        if self.clipboard_layout:
+            layout_to_paste = self.clipboard_layout.clone()
+            self.layout.add_sublayout(layout_to_paste, offset_x=4, offset_y=4)
+            items_to_paste = [BuildingItem(instance) for instance in layout_to_paste.buildings]
+
+            self.clearSelection()
+            for item in items_to_paste:
+                item.setSelected(True)
+                item.update()
+                self.addItem(item)
 
     def rotate_current_selection(self):
         for item in self.selectedItems():
@@ -157,6 +118,56 @@ class EditorScene(QGraphicsScene):
             self.addItem(BuildingItem(building))
 
     ## ======================================================
+    ## Helper methods
+    ## ======================================================
+
+    def scene_to_world(self, scene_pos: QPointF) -> Position:
+        return Position(scene_pos.x() / Settings.PIXELS_PER_METER, 
+                        scene_pos.y() / Settings.PIXELS_PER_METER)
+    
+    def scene_to_world_snapped(self, scene_pos: QPointF) -> Position:
+        x = round(scene_pos.x() / Settings.PIXELS_PER_METER)
+        y = round(scene_pos.y() / Settings.PIXELS_PER_METER)
+        return Position(x, y)
+
+    def place_building(self):
+        instance = self.preview_item.instance.clone()
+        self.layout.add_building(instance)
+        self.addItem(BuildingItem(instance))
+
+    def set_preview(self, building_type: BuildingType):
+        if self.preview_item:
+            self.removeItem(self.preview_item)
+
+        self.preview_item = BuildingItem(BuildingInstance(building_type, Position(0, 0), Rotation.DEG_0))
+        self.preview_item.setOpacity(0.4)
+        self.preview_item.setZValue(9999)  # always on top
+
+        self.addItem(self.preview_item)
+
+    def rotate_preview(self):
+        self.preview_item.instance.rotate_clockwise()
+        self.preview_item.update()
+
+    def snap_preview_to_cursor(self):
+        if self.preview_item:
+            snapped_x = round(self.last_mouse_scene_pos.x() / Settings.PIXELS_PER_METER) * Settings.PIXELS_PER_METER
+            snapped_y = round(self.last_mouse_scene_pos.y() / Settings.PIXELS_PER_METER) * Settings.PIXELS_PER_METER
+            self.preview_item.setPos(snapped_x, snapped_y)
+
+            self.preview_item.instance.move_to(round(snapped_x / Settings.PIXELS_PER_METER),
+                                               round(snapped_y / Settings.PIXELS_PER_METER))
+
+    def check_collisions(self):
+        if self.preview_item:
+            colliding = self.preview_item.is_colliding()
+            effect = QGraphicsColorizeEffect()
+            effect.setColor(QColor('red'))
+            effect.setStrength(0.5)
+
+            self.preview_item.setGraphicsEffect(effect if colliding else None)
+
+    ## ======================================================
     ## Event handlers
     ## ======================================================
 
@@ -184,6 +195,7 @@ class EditorScene(QGraphicsScene):
         self.last_mouse_scene_pos = event.scenePos()
         if self.preview_item:
             self.snap_preview_to_cursor()
+            self.check_collisions()
             self.preview_item.update()
         super().mouseMoveEvent(event)
 

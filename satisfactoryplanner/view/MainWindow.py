@@ -5,9 +5,9 @@ from PySide6.QtCore import Qt
 from view.EditorScene import EditorScene
 from view.BuldingSelectorWidget import BuildingPaletteWidget
 from view.EditorView import EditorView
-from model.building import building_types
+from view.Minimap import MinimapView
+from model.BuldingInstance import building_types
 from model.FactoryLayout import FactoryLayout
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -29,7 +29,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.editor)
         self.setCentralWidget(central)
 
-        self.minimap = QGraphicsView(self.editor.scene(), self)
+        self.minimap = MinimapView(self.editor, self)
         self.minimap.setFixedSize(200, 200)
         self.minimap.raise_()
 

@@ -1,8 +1,8 @@
 from .DraggableRectItem import DraggableRectItem
 from .Settings import Settings
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QPainterPath
 
-from model.building import BuildingType
+from model.BuldingInstance import BuildingType
 from model.FactoryLayout import BuildingInstance
 
 class BuildingItem(DraggableRectItem):
@@ -24,8 +24,18 @@ class BuildingItem(DraggableRectItem):
         self.setRotation(self.instance.rotation.value * 90)
 
     def itemChange(self, change, value):
-        if change == BuildingItem.ItemPositionChange:
-            self.instance.move_to(round(value.x() / Settings.PIXELS_PER_METER), 
-                                  round(value.y() / Settings.PIXELS_PER_METER))
-
+        if change == BuildingItem.ItemPositionHasChanged:
+            self.instance.move_to(value.x() / Settings.PIXELS_PER_METER,
+                                  value.y() / Settings.PIXELS_PER_METER)
+            
         return super().itemChange(change, value)
+    
+    def shape(self):
+        path = super().shape()
+        path = path.toFillPolygon().boundingRect().adjusted(0.1, 0.1, -0.1, -0.1)
+        new_path = QPainterPath()
+        new_path.addRect(path)
+        return new_path
+
+    def is_colliding(self) -> bool:
+        return len(self.collidingItems()) > 0
