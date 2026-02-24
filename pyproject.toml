@@ -1,0 +1,23 @@
+[project]
+name = "slapp"
+version = "0.0.1"
+authors = [
+    { name="Peter Gyulai", email="peterskhan1997@gmail.com" },
+]
+description = "Satisfactory Layout And Production Planner"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [ "PySide6" ]
+
+[build-system]
+requires = [ "setuptools" ]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+include = [ "slapp*" ]
+
+[project.scripts]
+slapp = "slapp.main:main"
