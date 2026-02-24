@@ -1,7 +1,8 @@
 from PySide6.QtWidgets import QGraphicsPathItem
 from PySide6.QtGui import QPainter, QPen, QColor, QPainterPathStroker, QPainterPath
-from PySide6.QtCore import Qt, QPointF, QTimer, QRectF
+from PySide6.QtCore import Qt, QPointF, QRectF
 from slapp.view.editor.Settings import Settings
+from slapp.view.editor.Clock import ClockSource
 from slapp.view.items.SelectableGraphicsItem import SelectableGraphicsItem
 from slapp.core.LinearElement import LinearElement
 import math
@@ -79,9 +80,7 @@ class LinearItem(QGraphicsPathItem, SelectableGraphicsItem):
         path = build_path(self.instance.nodes(), Settings.PIXELS_PER_METER)
         self.setPath(path)
 
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.animate)
-        self.timer.start(33)
+        ClockSource.get_clock('conveyor_animation_clock', 33).timeout.connect(self.animate)
 
     def update_from_instance(self):
         path = build_path(self.instance.nodes(), Settings.PIXELS_PER_METER)

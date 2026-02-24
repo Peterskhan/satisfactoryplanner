@@ -7,6 +7,4 @@
  - Fix half-meter placement
  - Fix conveyor code
  - Signals
- - Common update timer
- - Proper keyboard shortcuts handling
  - PlacementTool architecture

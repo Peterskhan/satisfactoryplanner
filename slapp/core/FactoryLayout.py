@@ -15,6 +15,11 @@ class FactoryLayout:
             layout.add_instance(building.clone())
         return layout
 
+    def clear(self) -> None:
+        """Clear every element from the layout."""
+        self.buildings.clear()
+        self.lines.clear()
+
     def clone(self) -> 'FactoryLayout':
         new_layout = FactoryLayout()
         for building in self.buildings:
@@ -40,9 +45,6 @@ class FactoryLayout:
             self.buildings.remove(instance)
         elif isinstance(instance, LinearElement):
             self.lines.remove(instance)
-
-    def buildings(self) -> list[DiscreteElement]:
-        return list(self.buildings)
 
     def serialize(self) -> str:
         building_data = [b.to_dict() for b in self.buildings]

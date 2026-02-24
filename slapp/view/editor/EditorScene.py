@@ -26,7 +26,7 @@ class EditorScene(QGraphicsScene):
         self.setSceneRect(-10000, -10000, 20000, 20000)
         self.preview_item = None
         self.layout = layout
-        self.save_file = None
+        self.save_file_path = None
         self.operation = None
         self.last_mouse_scene_pos = None
         self.clipboard_layout = None
@@ -90,50 +90,74 @@ class EditorScene(QGraphicsScene):
                 item.instance.rotate_clockwise()
                 item.update_from_instance()
 
-    def save_layout_to_file(self):
-        if self.save_file is None:
-            self.save_file, _ = QFileDialog.getSaveFileName(
-                None,
-                'Save file',
-                'factory.fl',
-                'Factory layouts (*.fl)'
-            )
+    def new_layout(self):
+        self.layout.clear()
 
-        if self.save_file is None:
+        for item in self.items():
+            self.removeItem(item)
+
+        self.save_file_path = None
+        self.loaded_file_changed.emit(self.save_file_path)
+
+    def save_layout_to_file(self):
+        if not self.save_file_path:
+            self.save_layout_to_file_as()
+        else:
+            with open(self.save_file_path, mode='w') as save_file:
+                save_file.write(self.layout.serialize())
+
+    def save_layout_to_file_as(self):
+        save_file_path, _ = QFileDialog.getSaveFileName(
+            None,
+            'Save file',
+            'factory.fl',
+            'Factory layouts (*.fl)'
+        )
+
+        if not save_file_path:
             return
 
-        with open(self.save_file, mode='w') as save_file:
+        with open(save_file_path, mode='w') as save_file:
             save_file.write(self.layout.serialize())
 
-        self.loaded_file_changed.emit(self.save_file)
+        self.save_file_path = save_file_path
+        self.loaded_file_changed.emit(self.save_file_path)
 
     def load_layout_from_file(self):
-        file_name, _ = QFileDialog.getOpenFileName(
+        open_file_path, _ = QFileDialog.getOpenFileName(
             None,
             'Open file',
             '',
             'Factory layouts (*.fl)'
         )
 
-        if file_name is None:
+        if not open_file_path:
             return
-
-        with open(file_name, mode='r') as load_file:
-            json_str = load_file.read()
-            self.layout.deserialize(json_str)
 
         # Clear existing items
         for item in self.items():
             self.removeItem(item)
 
-        # Add items from the loaded layout
-        for building in self.layout.buildings:
-            self.addItem(DiscreteItem(building))
+        with open(open_file_path, mode='r') as load_file:
+            json_str = load_file.read()
+            self.layout.deserialize(json_str)
 
-        for line in self.layout.lines:
-            self.addItem(LinearItem(line))
+            for building in self.layout.buildings:
+                self.addItem(DiscreteItem(building))
 
-        self.loaded_file_changed.emit(file_name)
+            for line in self.layout.lines:
+                self.addItem(LinearItem(line))
+
+        self.save_file_path = open_file_path
+        self.loaded_file_changed.emit(self.save_file_path)
+
+    def cancel_current_operation(self):
+        if self.operation is not None:
+            self.operation = None
+
+        if self.preview_item is not None:
+            self.removeItem(self.preview_item)
+            self.preview_item = None
 
     ## ======================================================
     ## Helper methods
@@ -160,6 +184,20 @@ class EditorScene(QGraphicsScene):
         item.setSelected(True)
         self.addItem(item)
 
+    def build_conveyor(self):
+        if self.operation == None:
+            self.set_preview_type(line_types['Conveyor belt'])
+
+    def rotate_current(self):
+        if self.operation == SceneOperation.BUILDING_PLACEMENT:
+            self.rotate_preview()
+        else:
+            self.rotate_current_selection()
+
+    def rotate_preview(self):
+        self.preview_item.instance.rotate_clockwise()
+        self.preview_item.update_from_instance()
+
     def set_preview(self, type: BuildingType | LineType):
         if self.preview_item:
             self.removeItem(self.preview_item)
@@ -169,16 +207,14 @@ class EditorScene(QGraphicsScene):
         elif isinstance(type, LineType):
             self.preview_item = LinearItem(LinearElement(type))
             self.preview_item.instance.add_preview_node()
+            self.snap_preview_to_cursor()
+            self.preview_item.update_from_instance()
         else:
             raise ValueError('Invalid type for preview')
 
         self.preview_item.setOpacity(0.4)
         self.preview_item.setZValue(9999)
         self.addItem(self.preview_item)
-
-    def rotate_preview(self):
-        self.preview_item.instance.rotate_clockwise()
-        self.preview_item.update_from_instance()
 
     def snap_preview_to_cursor(self):
         if self.preview_item:
@@ -192,8 +228,6 @@ class EditorScene(QGraphicsScene):
             elif isinstance(self.preview_item.instance, LinearElement):
                 self.preview_item.instance.move_preview_node_to(Position(round(snapped_x / Settings.PIXELS_PER_METER),
                                                                          round(snapped_y / Settings.PIXELS_PER_METER)))
-                # Redraw to avoid glitches with conveyors
-                self.update()
             else:
                 raise ValueError('Invalid preview item type')
 
@@ -217,6 +251,7 @@ class EditorScene(QGraphicsScene):
             elif self.operation == SceneOperation.LINE_PLACEMENT:
                 self.preview_item.instance.accept_preview_node()
                 self.preview_item.instance.add_preview_node()
+                self.snap_preview_to_cursor()
                 self.preview_item.update_from_instance()
                 super().mousePressEvent(event)
 
@@ -248,28 +283,3 @@ class EditorScene(QGraphicsScene):
             self.check_collisions()
             self.preview_item.update_from_instance()
         super().mouseMoveEvent(event)
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key.Key_Delete:
-            self.delete_current_selection()
-        elif event.key() == Qt.Key.Key_A and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
-            self.select_all_items()
-        elif event.key() == Qt.Key.Key_C and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
-            self.copy_current_selection()
-        elif event.key() == Qt.Key.Key_X and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
-            self.cut_current_selection()
-        elif event.key() == Qt.Key.Key_V and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
-            self.paste_current_selection()
-        elif event.key() == Qt.Key.Key_S and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
-            self.save_layout_to_file()
-        elif event.key() == Qt.Key.Key_O and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
-            self.load_layout_from_file()
-        elif event.key() == Qt.Key.Key_R:
-            if self.operation == SceneOperation.BUILDING_PLACEMENT:
-                self.rotate_preview()
-            else:
-                self.rotate_current_selection()
-        elif event.key() == Qt.Key.Key_C and self.operation == None:
-            self.set_preview_type(line_types['Conveyor belt'])
-        else:
-            super().keyPressEvent(event)

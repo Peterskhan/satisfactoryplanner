@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QGraphicsView
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QPen, QColor
+from slapp.view.editor.Clock import ClockSource
 
 class MinimapView(QGraphicsView):
 
@@ -13,16 +14,15 @@ class MinimapView(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setDragMode(QGraphicsView.NoDrag)
 
-        self.timer = QTimer()
-        self.timer.timeout.connect(lambda: self.viewport().update())
-        self.timer.start(33)  # Update at ~30 FPS
+        ClockSource.get_clock('minimap_update_clock', 33).timeout.connect(
+            lambda: self.viewport().update())
 
     def drawForeground(self, painter, rect):
         super().drawForeground(painter, rect)
 
         # Map the main view's viewport rect to scene coordinates
         scene_rect = self.main_view.mapToScene(self.main_view.viewport().rect()).boundingRect()
-        
+
         # Draw a rectangle showing the main view
         pen = QPen(QColor('lightgray'))
         pen.setWidth(100)

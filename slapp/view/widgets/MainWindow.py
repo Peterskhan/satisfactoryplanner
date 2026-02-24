@@ -1,7 +1,8 @@
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QHBoxLayout, QLabel, QStatusBar, QGraphicsView
+    QMainWindow, QWidget, QHBoxLayout, QLabel, QStatusBar
 )
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence
 from slapp.view.editor.EditorScene import EditorScene
 from slapp.view.widgets.BuldingSelectorWidget import BuildingPaletteWidget
 from slapp.view.editor.EditorView import EditorView
@@ -23,7 +24,7 @@ class MainWindow(QMainWindow):
         self.scene = EditorScene(self, self.factory)
         self.editor = EditorView(self.scene)
 
-        self.scene.loaded_file_changed.connect(self.setWindowTitle)
+        self.scene.loaded_file_changed.connect(self.set_title)
 
         self.building_palette.building_selected.connect(self.editor.scene().set_preview_type)
 
@@ -44,32 +45,93 @@ class MainWindow(QMainWindow):
         self.editor.scene().mouse_scene_position_changed.connect(self.label_right.setText)
 
         self.create_menus()
+        self.scene.new_layout()
+
+    def set_title(self, current_save_file: str | None) -> None:
+        """Set the title of the window according to the current save file."""
+        self.setWindowTitle(f'SLAPP - {current_save_file or "Untitled Factory"}')
 
     def create_menus(self):
         self.menu_bar = self.menuBar()
 
+        # ===========================================================
+        # File menu
+        # ===========================================================
         self.file_menu = self.menu_bar.addMenu('File')
-        self.file_new_action = self.file_menu.addAction('New')
-        self.file_open_action = self.file_menu.addAction('Open')
-        self.file_save_action = self.file_menu.addAction('Save')
-        self.file_exit_action = self.file_menu.addAction('Exit')
 
+        self.new_action = self.file_menu.addAction('New')
+        self.new_action.triggered.connect(self.scene.new_layout)
+        self.new_action.setShortcut(QKeySequence.StandardKey.New)
+
+        self.file_menu.addSeparator()
+
+        self.open_action = self.file_menu.addAction('Open')
+        self.open_action.triggered.connect(self.scene.load_layout_from_file)
+        self.open_action.setShortcut(QKeySequence.StandardKey.Open)
+
+        self.file_menu.addSeparator()
+
+        self.save_action = self.file_menu.addAction('Save')
+        self.save_action.triggered.connect(self.scene.save_layout_to_file)
+        self.save_action.setShortcut(QKeySequence.StandardKey.Save)
+
+        self.save_as_action = self.file_menu.addAction('Save As...')
+        self.save_as_action.triggered.connect(self.scene.save_layout_to_file_as)
+        self.save_as_action.setShortcut(QKeySequence.StandardKey.SaveAs)
+
+        self.file_menu.addSeparator()
+
+        self.exit_action = self.file_menu.addAction('Exit')
+        self.exit_action.triggered.connect(self.close)
+        self.exit_action.setShortcut(QKeySequence.StandardKey.Close)
+
+        # ===========================================================
+        # Edit menu
+        # ===========================================================
         self.edit_menu = self.menu_bar.addMenu('Edit')
-        self.edit_cut_action = self.edit_menu.addAction('Cut')
-        self.edit_copy_action = self.edit_menu.addAction('Copy')
-        self.edit_paste_action = self.edit_menu.addAction('Paste')
 
-        self.configure_actions()
+        self.cut_action = self.edit_menu.addAction('Cut')
+        self.cut_action.triggered.connect(self.scene.cut_current_selection)
+        self.cut_action.setShortcut(QKeySequence.StandardKey.Cut)
 
-    def configure_actions(self):
-        self.file_new_action.triggered.connect(lambda: None)
-        self.file_open_action.triggered.connect(self.scene.load_layout_from_file)
-        self.file_save_action.triggered.connect(self.scene.save_layout_to_file)
-        self.file_exit_action.triggered.connect(self.close)
+        self.copy_action = self.edit_menu.addAction('Copy')
+        self.copy_action.triggered.connect(self.scene.copy_current_selection)
+        self.copy_action.setShortcut(QKeySequence.StandardKey.Copy)
 
-        self.edit_cut_action.triggered.connect(self.scene.cut_current_selection)
-        self.edit_copy_action.triggered.connect(self.scene.copy_current_selection)
-        self.edit_paste_action.triggered.connect(self.scene.paste_current_selection)
+        self.paste_action = self.edit_menu.addAction('Paste')
+        self.paste_action.triggered.connect(self.scene.paste_current_selection)
+        self.paste_action.setShortcut(QKeySequence.StandardKey.Paste)
+
+        self.edit_menu.addSeparator()
+
+        self.select_all_action = self.edit_menu.addAction('Select All')
+        self.select_all_action.triggered.connect(self.scene.select_all_items)
+        self.select_all_action.setShortcut(QKeySequence.StandardKey.SelectAll)
+
+        self.edit_menu.addSeparator()
+
+        self.cancel_action = self.edit_menu.addAction('Cancel')
+        self.cancel_action.triggered.connect(self.scene.cancel_current_operation)
+        self.cancel_action.setShortcut(QKeySequence.StandardKey.Cancel)
+
+        self.delete_action = self.edit_menu.addAction('Delete')
+        self.delete_action.triggered.connect(self.scene.delete_current_selection)
+        self.delete_action.setShortcut(QKeySequence.StandardKey.Delete)
+
+        self.edit_menu.addSeparator()
+
+        self.rotate_action = self.edit_menu.addAction('Rotate')
+        self.rotate_action.triggered.connect(self.scene.rotate_current)
+        self.rotate_action.setShortcut('R')
+
+        # ===========================================================
+        # Build menu
+        # ===========================================================
+        self.build_menu = self.menu_bar.addMenu('Build')
+
+        self.conveyor_action = self.build_menu.addAction('Conveyor')
+        self.conveyor_action.triggered.connect(self.scene.build_conveyor)
+        self.conveyor_action.setShortcut('C')
 
     def resizeEvent(self, event):
         self.minimap.move(self.width() - self.minimap.width() - 30,
