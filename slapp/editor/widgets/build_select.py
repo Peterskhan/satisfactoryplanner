@@ -1,10 +1,10 @@
 from PySide6.QtWidgets import QVBoxLayout, QGridLayout, QPushButton, QWidget, QScrollArea
 from PySide6.QtGui import QPixmap
-from collections import defaultdict
 from PySide6.QtCore import Qt, Signal
-from slapp.core.LinearElement import line_types
+from collections import defaultdict
+from slapp.core.linear import line_types
 
-from slapp.view.widgets.Accordion import Accordion
+from slapp.editor.widgets import Accordion
 
 class BuildingPaletteWidget(QScrollArea):
     building_selected = Signal(object)

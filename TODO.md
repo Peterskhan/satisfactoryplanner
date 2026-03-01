@@ -7,4 +7,3 @@
  - Fix half-meter placement
  - Fix conveyor code
  - Signals
- - PlacementTool architecture

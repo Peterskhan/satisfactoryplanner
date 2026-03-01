@@ -1,6 +1,6 @@
 import sys
 from PySide6.QtWidgets import QApplication
-from slapp.view.widgets.MainWindow import MainWindow
+from slapp.editor.widgets.main_window import MainWindow
 
 def main():
     app = QApplication(sys.argv)

@@ -1,35 +1,30 @@
-from PySide6.QtWidgets import QGraphicsScene, QFileDialog, QGraphicsColorizeEffect
-from PySide6.QtCore import Qt, QPointF, Signal
-from PySide6.QtGui import QColor
-from slapp.view.editor.Settings import Settings
-from slapp.core.DiscreteElement import DiscreteElement, BuildingType, Position, Rotation
-from slapp.view.items.DiscreteItem import DiscreteItem
-from slapp.core.LinearElement import LineType, LinearElement, line_types
-from slapp.view.items.LinearItem import LinearItem
-from slapp.core.FactoryLayout import FactoryLayout
-from enum import Enum
+from PySide6.QtWidgets import QGraphicsScene, QFileDialog
+from PySide6.QtCore import QPointF, Signal
+from slapp.editor.tools.tool_base import EditorTool, EditorContext
+from slapp.editor.tools.place_discrete import DiscretePlacementTool
+from slapp.editor.tools.place_linear import LinearPlacementTool
+from slapp.editor.tools.measure import MeasurementTool
+from slapp.editor.items.discrete import DiscreteItem
+from slapp.editor.items.linear import LinearItem
+from slapp.core.factory import FactoryLayout
+from slapp.core.discrete import BuildingType, Position
+from slapp.core.linear import LineType, line_types
+from slapp.editor.settings import Settings
 
-class SceneOperation(Enum):
-    BUILDING_PLACEMENT = 1
-    LINE_PLACEMENT = 2
-    BUILDING_REMOVAL = 3
 
 class EditorScene(QGraphicsScene):
     """The graphical representation of the factory editor's world."""
 
     layout: FactoryLayout
-    operation: SceneOperation
-    preview_item: DiscreteItem | LinearItem
 
     def __init__(self, parent, layout: FactoryLayout):
         super().__init__(parent)
         self.setSceneRect(-10000, -10000, 20000, 20000)
-        self.preview_item = None
         self.layout = layout
         self.save_file_path = None
-        self.operation = None
-        self.last_mouse_scene_pos = None
         self.clipboard_layout = None
+        self.tool = None
+        self.context = EditorContext(self)
 
     ## ======================================================
     ## Signals
@@ -45,16 +40,13 @@ class EditorScene(QGraphicsScene):
 
     def set_preview_type(self, type: BuildingType | LineType):
         if isinstance(type, BuildingType):
-            self.operation = SceneOperation.BUILDING_PLACEMENT
+            self.set_tool(DiscretePlacementTool(self.context, type))
         elif isinstance(type, LineType):
-            self.operation = SceneOperation.LINE_PLACEMENT
-        else:
-            raise ValueError(f'Invalid type for preview: {type}')
+            self.set_tool(LinearPlacementTool(self.context, type))
 
         # Hack to ensure the scene has focus for key events (e.g. rotation)
         # immediately after selecting a building type
         self.views()[0].setFocus()
-        self.set_preview(type)
 
     def delete_current_selection(self):
         for item in self.selectedItems():
@@ -152,16 +144,18 @@ class EditorScene(QGraphicsScene):
         self.loaded_file_changed.emit(self.save_file_path)
 
     def cancel_current_operation(self):
-        if self.operation is not None:
-            self.operation = None
-
-        if self.preview_item is not None:
-            self.removeItem(self.preview_item)
-            self.preview_item = None
+        if self.tool:
+            self.set_tool(None)
 
     ## ======================================================
     ## Helper methods
     ## ======================================================
+
+    def set_tool(self, tool: EditorTool, should_cancel: bool = True) -> None:
+        if self.tool and should_cancel:
+            self.tool.cancel()
+
+        self.tool = tool
 
     def scene_to_world(self, scene_pos: QPointF) -> Position:
         return Position(scene_pos.x() / Settings.PIXELS_PER_METER,
@@ -172,114 +166,37 @@ class EditorScene(QGraphicsScene):
         y = round(scene_pos.y() / Settings.PIXELS_PER_METER)
         return Position(x, y)
 
-    def place_building(self):
-        instance = self.preview_item.instance.clone()
-        self.layout.add_instance(instance)
-        self.addItem(DiscreteItem(instance))
-
-    def place_line(self):
-        instance = self.preview_item.instance.clone()
-        self.layout.add_line(instance)
-        item = LinearItem(instance)
-        item.setSelected(True)
-        self.addItem(item)
-
     def build_conveyor(self):
-        if self.operation == None:
-            self.set_preview_type(line_types['Conveyor belt'])
+        self.set_preview_type(line_types['Conveyor belt'])
+
+    def start_measurement(self):
+        self.set_tool(MeasurementTool(self.context))
 
     def rotate_current(self):
-        if self.operation == SceneOperation.BUILDING_PLACEMENT:
-            self.rotate_preview()
+        if self.tool:
+            self.tool.rotate()
         else:
             self.rotate_current_selection()
-
-    def rotate_preview(self):
-        self.preview_item.instance.rotate_clockwise()
-        self.preview_item.update_from_instance()
-
-    def set_preview(self, type: BuildingType | LineType):
-        if self.preview_item:
-            self.removeItem(self.preview_item)
-
-        if isinstance(type, BuildingType):
-            self.preview_item = DiscreteItem(DiscreteElement(type, Position(0, 0), Rotation.DEG_0))
-        elif isinstance(type, LineType):
-            self.preview_item = LinearItem(LinearElement(type))
-            self.preview_item.instance.add_preview_node()
-            self.snap_preview_to_cursor()
-            self.preview_item.update_from_instance()
-        else:
-            raise ValueError('Invalid type for preview')
-
-        self.preview_item.setOpacity(0.4)
-        self.preview_item.setZValue(9999)
-        self.addItem(self.preview_item)
-
-    def snap_preview_to_cursor(self):
-        if self.preview_item:
-            snapped_x = round(self.last_mouse_scene_pos.x() / Settings.PIXELS_PER_METER) * Settings.PIXELS_PER_METER
-            snapped_y = round(self.last_mouse_scene_pos.y() / Settings.PIXELS_PER_METER) * Settings.PIXELS_PER_METER
-
-            if isinstance(self.preview_item.instance, DiscreteElement):
-                self.preview_item.setPos(snapped_x, snapped_y)
-                self.preview_item.instance.move_to(round(snapped_x / Settings.PIXELS_PER_METER),
-                                                   round(snapped_y / Settings.PIXELS_PER_METER))
-            elif isinstance(self.preview_item.instance, LinearElement):
-                self.preview_item.instance.move_preview_node_to(Position(round(snapped_x / Settings.PIXELS_PER_METER),
-                                                                         round(snapped_y / Settings.PIXELS_PER_METER)))
-            else:
-                raise ValueError('Invalid preview item type')
-
-    def check_collisions(self):
-        if self.preview_item:
-            colliding = self.preview_item.is_colliding()
-            effect = QGraphicsColorizeEffect()
-            effect.setColor(QColor('red'))
-            effect.setStrength(0.5)
-
-            self.preview_item.setGraphicsEffect(effect if colliding else None)
 
     ## ======================================================
     ## Event handlers
     ## ======================================================
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton and self.preview_item:
-            if self.operation == SceneOperation.BUILDING_PLACEMENT:
-                self.place_building()
-            elif self.operation == SceneOperation.LINE_PLACEMENT:
-                self.preview_item.instance.accept_preview_node()
-                self.preview_item.instance.add_preview_node()
-                self.snap_preview_to_cursor()
-                self.preview_item.update_from_instance()
-                super().mousePressEvent(event)
+        if self.tool:
+            self.tool.mousePressEvent(event)
 
-        elif event.button() == Qt.RightButton and self.preview_item:
-            if self.operation == SceneOperation.BUILDING_PLACEMENT:
-                if self.preview_item:
-                    self.removeItem(self.preview_item)
-            elif self.operation == SceneOperation.LINE_PLACEMENT:
-                if self.preview_item:
-                    self.removeItem(self.preview_item)
-                    self.place_line()
-
-            self.preview_item = None
-            self.operation = None
-
-        else:
-            super().mousePressEvent(event)
+        super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        if self.tool:
+            self.tool.mouseMoveEvent(event)
+
         scene_pos = event.scenePos()
         world_pos = self.scene_to_world(scene_pos)
         snapped_world_pos = self.scene_to_world_snapped(scene_pos)
         self.mouse_scene_position_changed.emit(f'Scene Position: ({scene_pos.x():.2f}, {scene_pos.y():.2f}) '
                                                f'World Position: ({world_pos.x:.2f}, {world_pos.y:.2f}) '
                                                f'Snapped World Position: ({snapped_world_pos.x}, {snapped_world_pos.y})')
-        self.last_mouse_scene_pos = event.scenePos()
-        if self.preview_item:
-            self.snap_preview_to_cursor()
-            self.check_collisions()
-            self.preview_item.update_from_instance()
+        self.context.set_lat_mouse_scene_position(event.scenePos())
         super().mouseMoveEvent(event)

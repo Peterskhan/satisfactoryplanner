@@ -1,6 +1,6 @@
 import json
-from slapp.core.DiscreteElement import DiscreteElement, building_types
-from slapp.core.LinearElement import LinearElement, line_types
+from slapp.core.discrete import DiscreteElement, building_types
+from slapp.core.linear import LinearElement, line_types
 
 class FactoryLayout:
 

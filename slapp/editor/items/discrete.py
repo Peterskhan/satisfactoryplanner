@@ -1,10 +1,9 @@
-from .DraggableRectItem import DraggableRectItem
-from slapp.view.editor.Settings import Settings
 from PySide6.QtGui import QPixmap, QPainterPath
 from PySide6.QtWidgets import QStyleOptionGraphicsItem, QStyle
-from slapp.view.items.SelectableGraphicsItem import SelectableGraphicsItem
-from slapp.core.DiscreteElement import BuildingType
-from slapp.core.FactoryLayout import DiscreteElement
+from slapp.editor.items.draggable import DraggableRectItem
+from slapp.editor.items.selectable import SelectableGraphicsItem
+from slapp.editor.settings import Settings
+from slapp.core.discrete import BuildingType, DiscreteElement
 
 class DiscreteItem(DraggableRectItem, SelectableGraphicsItem):
     type: BuildingType

@@ -1,10 +1,10 @@
 from PySide6.QtWidgets import QGraphicsPathItem
 from PySide6.QtGui import QPainter, QPen, QColor, QPainterPathStroker, QPainterPath
 from PySide6.QtCore import Qt, QPointF, QRectF
-from slapp.view.editor.Settings import Settings
-from slapp.view.editor.Clock import ClockSource
-from slapp.view.items.SelectableGraphicsItem import SelectableGraphicsItem
-from slapp.core.LinearElement import LinearElement
+from slapp.editor.settings import Settings
+from slapp.editor.clock import ClockSource
+from slapp.editor.items.selectable import SelectableGraphicsItem
+from slapp.core.linear import LinearElement
 import math
 
 def build_path(points, ppm, radius_units=1):

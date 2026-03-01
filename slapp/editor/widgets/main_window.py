@@ -1,14 +1,12 @@
-from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QHBoxLayout, QLabel, QStatusBar
-)
+from PySide6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QLabel, QStatusBar
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence
-from slapp.view.editor.EditorScene import EditorScene
-from slapp.view.widgets.BuldingSelectorWidget import BuildingPaletteWidget
-from slapp.view.editor.EditorView import EditorView
-from slapp.view.widgets.Minimap import MinimapView
-from slapp.core.DiscreteElement import building_types
-from slapp.core.FactoryLayout import FactoryLayout
+from slapp.editor.scene import EditorScene
+from slapp.editor.view import EditorView
+from slapp.core.discrete import building_types
+from slapp.core.factory import FactoryLayout
+from slapp.editor.widgets.minimap import MinimapView
+from slapp.editor.widgets.build_select import BuildingPaletteWidget
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -125,13 +123,17 @@ class MainWindow(QMainWindow):
         self.rotate_action.setShortcut('R')
 
         # ===========================================================
-        # Build menu
+        # Tools menu
         # ===========================================================
-        self.build_menu = self.menu_bar.addMenu('Build')
+        self.build_menu = self.menu_bar.addMenu('Tools')
 
-        self.conveyor_action = self.build_menu.addAction('Conveyor')
+        self.conveyor_action = self.build_menu.addAction('Build Conveyor')
         self.conveyor_action.triggered.connect(self.scene.build_conveyor)
         self.conveyor_action.setShortcut('C')
+
+        self.measure_action = self.build_menu.addAction('Measure...')
+        self.measure_action.triggered.connect(self.scene.start_measurement)
+        self.measure_action.setShortcut('M')
 
     def resizeEvent(self, event):
         self.minimap.move(self.width() - self.minimap.width() - 30,

@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QGraphicsView
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPen, QColor
-from slapp.view.editor.Clock import ClockSource
+from slapp.editor.clock import ClockSource
 
 class MinimapView(QGraphicsView):
 

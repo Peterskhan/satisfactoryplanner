@@ -1,8 +1,8 @@
 from PySide6.QtWidgets import QGraphicsView
-from PySide6.QtGui import QColor, QPainter, QPen, QBrush, QPixmap, QTransform, QGuiApplication
+from PySide6.QtGui import QColor, QPainter, QPen, QGuiApplication
 from PySide6.QtCore import Qt, QRectF
-from slapp.view.editor.Settings import Settings
-from slapp.view.editor.EditorScene import EditorScene
+from slapp.editor.settings import Settings
+from slapp.editor.scene import EditorScene
 
 class EditorView(QGraphicsView):
     def __init__(self, scene: EditorScene):

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from slapp.core.DiscreteElement import Position
+from slapp.core.discrete import Position
 
 @dataclass
 class LineType:
