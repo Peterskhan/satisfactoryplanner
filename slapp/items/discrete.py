@@ -1,7 +1,7 @@
 from PySide6.QtGui import QPixmap, QPainterPath
 from PySide6.QtWidgets import QStyleOptionGraphicsItem, QStyle
-from slapp.editor.items.draggable import DraggableRectItem
-from slapp.editor.items.selectable import SelectableGraphicsItem
+from slapp.items.draggable import DraggableRectItem
+from slapp.items.selectable import SelectableGraphicsItem
 from slapp.editor.settings import Settings
 from slapp.core.discrete import BuildingType, DiscreteElement
 
@@ -13,7 +13,7 @@ class DiscreteItem(DraggableRectItem, SelectableGraphicsItem):
                          Settings.PIXELS_PER_METER * instance.position.y,
                          Settings.PIXELS_PER_METER * instance.type.width,
                          Settings.PIXELS_PER_METER * instance.type.length,
-                         QPixmap(instance.type.icon))
+                         QPixmap(instance.type.texture))
         self.instance = instance
         self.update_from_instance()
 

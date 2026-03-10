@@ -1,38 +1,29 @@
-from PySide6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QLabel, QStatusBar
+from PySide6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QLabel, QStatusBar, QVBoxLayout, QToolButton
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QKeySequence
+from PySide6.QtGui import QKeySequence, QPixmap
 from slapp.editor.scene import EditorScene
 from slapp.editor.view import EditorView
 from slapp.core.discrete import building_types
-from slapp.core.factory import FactoryLayout
-from slapp.editor.widgets.minimap import MinimapView
-from slapp.editor.widgets.build_select import BuildingPaletteWidget
+from slapp.widgets.minimap import MinimapView
+from slapp.widgets.build_select import BuildingPaletteWidget
+from slapp.widgets.floorselector import FloorSelector
+from slapp.widgets.menubar import Menubar
+from slapp.resources.loader import ResourceLoader
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+
+    def __init__(self, app):
         super().__init__()
 
-        self.setWindowTitle("Satisfactory Layout Planner")
-
-        central = QWidget()
-        layout = QHBoxLayout(central)
+        self.application = app
+        self.setWindowTitle('Satisfactory Layout Planner')
 
         self.building_palette = BuildingPaletteWidget(building_types)
-        self.factory = FactoryLayout()
-        self.scene = EditorScene(self, self.factory)
+        self.scene = EditorScene(self)
         self.editor = EditorView(self.scene)
 
         self.scene.loaded_file_changed.connect(self.set_title)
-
         self.building_palette.building_selected.connect(self.editor.scene().set_preview_type)
-
-        layout.addWidget(self.building_palette)
-        layout.addWidget(self.editor)
-        self.setCentralWidget(central)
-
-        self.minimap = MinimapView(self.editor, self)
-        self.minimap.setFixedSize(200, 200)
-        self.minimap.raise_()
 
         status = QStatusBar()
         self.setStatusBar(status)
@@ -42,15 +33,43 @@ class MainWindow(QMainWindow):
         status.addPermanentWidget(self.label_right) # right-aligned
         self.editor.scene().mouse_scene_position_changed.connect(self.label_right.setText)
 
+        from slapp.editor.debug import SceneDebugWindow
+        self.debug_window = SceneDebugWindow(self.scene)
+        #self.debug_window.show()
+
+        self.close_button = QToolButton()
+        self.close_button.setIcon(QPixmap(ResourceLoader.load(':/icons/close.svg')))
+        self.close_button.clicked.connect(self.close)
         self.create_menus()
-        self.scene.new_layout()
+
+        central = QWidget()
+        top_layout = QHBoxLayout()
+        top_layout.addWidget(self.menu_bar)
+        top_layout.addWidget(self.close_button)
+        editor_layout = QHBoxLayout()
+        editor_layout.addWidget(self.building_palette)
+        editor_layout.addWidget(self.editor)
+        main_layout = QVBoxLayout(central)
+        main_layout.addLayout(top_layout)
+        main_layout.addLayout(editor_layout)
+        self.setCentralWidget(central)
+
+        self.minimap = MinimapView(self.editor, self)
+        self.minimap.setFixedSize(200, 200)
+        self.minimap.raise_()
+
+        self.floor_selector = FloorSelector(self.scene, parent=self.editor)
+        self.floor_selector.raise_()
+        self.floor_selector.floor_changed.connect(self.scene.change_floor)
+        self.scene.factory_changed.connect(self.floor_selector.refresh)
 
     def set_title(self, current_save_file: str | None) -> None:
         """Set the title of the window according to the current save file."""
         self.setWindowTitle(f'SLAPP - {current_save_file or "Untitled Factory"}')
 
-    def create_menus(self):
-        self.menu_bar = self.menuBar()
+    def create_menus(self) -> None:
+        self.menu_bar = Menubar()
+        #self.menu_bar = self.menuBar()
 
         # ===========================================================
         # File menu
@@ -58,7 +77,7 @@ class MainWindow(QMainWindow):
         self.file_menu = self.menu_bar.addMenu('File')
 
         self.new_action = self.file_menu.addAction('New')
-        self.new_action.triggered.connect(self.scene.new_layout)
+        self.new_action.triggered.connect(self.scene.initialize_layout)
         self.new_action.setShortcut(QKeySequence.StandardKey.New)
 
         self.file_menu.addSeparator()
@@ -135,8 +154,38 @@ class MainWindow(QMainWindow):
         self.measure_action.triggered.connect(self.scene.start_measurement)
         self.measure_action.setShortcut('M')
 
+        # ===========================================================
+        # View menu
+        # ===========================================================
+        self.view_menu = self.menu_bar.addMenu('View')
+
+        self.toggle_grid_action = self.view_menu.addAction('Show Grid')
+        self.toggle_grid_action.setCheckable(True)
+        self.toggle_grid_action.setChecked(True)
+        self.toggle_grid_action.toggled.connect(self.scene.set_grid_visible)
+
+        self.toggle_minimap_action = self.view_menu.addAction('Show Minimap')
+        self.toggle_minimap_action.setCheckable(True)
+        self.toggle_minimap_action.setChecked(True)
+        self.toggle_minimap_action.toggled.connect(self.set_minimap_visible)
+
+    def set_minimap_visible(self, visible: bool) -> None:
+        self.minimap.setVisible(visible)
+
     def resizeEvent(self, event):
         self.minimap.move(self.width() - self.minimap.width() - 30,
                           self.height() - self.minimap.height() - 50)
         self.minimap.fitInView(self.editor.scene().sceneRect(), Qt.KeepAspectRatio)
+
+        ew = self.editor.viewport().width()
+        eh = self.editor.height()
+        self.floor_selector.move(ew - self.floor_selector.width(), eh - 400)
+
         super().resizeEvent(event)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_T:
+            with open(ResourceLoader.load(':/theme.qss'), mode='r') as theme_file:
+                self.application.setStyleSheet(theme_file.read())
+
+        return super().keyPressEvent(event)

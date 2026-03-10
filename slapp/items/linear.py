@@ -3,7 +3,7 @@ from PySide6.QtGui import QPainter, QPen, QColor, QPainterPathStroker, QPainterP
 from PySide6.QtCore import Qt, QPointF, QRectF
 from slapp.editor.settings import Settings
 from slapp.editor.clock import ClockSource
-from slapp.editor.items.selectable import SelectableGraphicsItem
+from slapp.items.selectable import SelectableGraphicsItem
 from slapp.core.linear import LinearElement
 import math
 
@@ -69,8 +69,8 @@ def build_path(points, ppm, radius_units=1):
     return path
 
 class LinearItem(QGraphicsPathItem, SelectableGraphicsItem):
-    def __init__(self, instance: LinearElement, parent=None):
-        super().__init__(parent)
+    def __init__(self, instance: LinearElement):
+        super().__init__()
         self.setFlags(QGraphicsPathItem.ItemIsSelectable | QGraphicsPathItem.ItemIsFocusable)
         self.width = Settings.PIXELS_PER_METER * (instance.type.width - 0.5)
         self.instance = instance

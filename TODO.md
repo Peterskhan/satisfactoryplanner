@@ -1,5 +1,4 @@
 ### Feature TODO
- - Floors
  - Building inputs / outputs / power connections
  - Undo/Redo
 

@@ -1,8 +1,8 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QMouseEvent, QKeyEvent, QColor
 from PySide6.QtWidgets import QGraphicsColorizeEffect
-from slapp.editor.tools.tool_base import EditorTool, EditorContext
-from slapp.editor.items.discrete import DiscreteItem
+from slapp.tools.tool_base import EditorTool, EditorContext
+from slapp.items.discrete import DiscreteItem
 from slapp.editor.settings import Settings
 from slapp.core.discrete import *
 
@@ -23,13 +23,7 @@ class DiscretePlacementTool(EditorTool):
         self.preview_item = DiscreteItem(DiscreteElement(type, Position(0, 0), Rotation.DEG_0))
         self.preview_item.setOpacity(0.4)
         self.preview_item.setZValue(9999)
-        self.context.add_item(self.preview_item)
-
-    def activate(self) -> None:
-        pass
-
-    def deactivate(self) -> None:
-        pass
+        self.context.add_preview_item(self.preview_item)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """Handle mouse press events."""
@@ -38,7 +32,6 @@ class DiscretePlacementTool(EditorTool):
 
         if event.button() == Qt.LeftButton:
             instance = self.preview_item.instance.clone()
-            self.context.layout().add_instance(instance)
             self.context.add_item(DiscreteItem(instance))
 
         elif event.button() == Qt.RightButton:
@@ -64,7 +57,7 @@ class DiscretePlacementTool(EditorTool):
             self.preview_item.update_from_instance()
 
     def cancel(self) -> None:
-        self.context.remove_item(self.preview_item)
+        self.context.remove_preview_item(self.preview_item)
         self.preview_item = None
         self.context.exit_tool()
 

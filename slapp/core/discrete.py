@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
+from slapp.resources.loader import ResourceLoader
 
 class Rotation(Enum):
     DEG_0 = 0
@@ -24,33 +25,34 @@ class BuildingType:
     width: int
     length: int
     category: str
+    texture: str
     icon: str
 
 building_types = {
     # Production
-    'Constructor': BuildingType('Constructor', 8, 10, 'Production', './slapp/resources/Constructor.png'),
-    'Assembler': BuildingType('Assembler', 10, 15, 'Production', './slapp/resources/Assembler.png'),
-    'Manufacturer': BuildingType('Manufacturer', 18, 20, 'Production', './slapp/resources/Manufacturer.png'),
-    'Foundry': BuildingType('Foundry', 10, 9, 'Production', './slapp/resources/Foundry.png'),
-    'Smelter': BuildingType('Smelter', 6, 9, 'Production', './slapp/resources/Smelter.png'),
-    'Refinery': BuildingType('Refinery', 10, 20, 'Production', './slapp/resources/Refinery.png'),
+    'Constructor': BuildingType('Constructor', 8, 10, 'Production', ResourceLoader.load(':/buildings/Constructor.png'), ResourceLoader.load(':/building_icons/IconDesc_ConstructorMk1_512.png')),
+    'Assembler': BuildingType('Assembler', 10, 15, 'Production', ResourceLoader.load(':/buildings/Assembler.png'), ResourceLoader.load(':/building_icons/IconDesc_AssemblerMk1_512.png')),
+    'Manufacturer': BuildingType('Manufacturer', 18, 20, 'Production', ResourceLoader.load(':/buildings/Manufacturer.png'), ResourceLoader.load(':/building_icons/IconDesc_Manufacturer_512.png')),
+    'Foundry': BuildingType('Foundry', 10, 9, 'Production', ResourceLoader.load(':/buildings/Foundry.png'), ResourceLoader.load(':/building_icons/IconDesc_Foundry_512.png')),
+    'Smelter': BuildingType('Smelter', 6, 9, 'Production', ResourceLoader.load(':/buildings/Smelter.png'), ResourceLoader.load(':/building_icons/IconDesc_SmelterMk1_512.png')),
+    'Refinery': BuildingType('Refinery', 10, 20, 'Production', ResourceLoader.load(':/buildings/Refinery.png'), ResourceLoader.load(':/building_icons/IconDesc_OilRefinery_512.png')),
 
     # Power
-    'Coal Generator': BuildingType('Coal Generator', 10, 26, 'Power', './slapp/resources/CoalGenerator.png'),
-    'Fuel Generator': BuildingType('Fuel Generator', 20, 20, 'Power', './slapp/resources/FuelGenerator.png'),
+    'Coal Generator': BuildingType('Coal Generator', 10, 26, 'Power', ResourceLoader.load(':/buildings/CoalGenerator.png'), ResourceLoader.load(':/building_icons/IconDesc_CoalGenerator_512.png')),
+    'Fuel Generator': BuildingType('Fuel Generator', 20, 20, 'Power', ResourceLoader.load(':/buildings/FuelGenerator.png'), ResourceLoader.load(':/building_icons/FuelGenerator_512.png')),
 
     # Logistics
-    'Lift (IN)': BuildingType('Lift (IN)', 2, 2, 'Logistics', './slapp/resources/LiftIn.png'),
-    'Lift (OUT)': BuildingType('Lift (OUT)', 2, 2, 'Logistics', './slapp/resources/LiftOut.png'),
-    'Splitter': BuildingType('Splitter', 4, 4, 'Logistics', './slapp/resources/Splitter.png'),
-    'Merger': BuildingType('Merger', 4, 4, 'Logistics', './slapp/resources/Merger.png'),
-    'Pipe Junction': BuildingType('Pipe Junction', 4, 4, 'Logistics', './slapp/resources/PipeJunction.png'),
+    'Lift (IN)': BuildingType('Lift (IN)', 2, 2, 'Logistics', ResourceLoader.load(':/buildings/LiftIn.png'), ResourceLoader.load(':/building_icons/ConveyorLiftMK1_512.png')),
+    'Lift (OUT)': BuildingType('Lift (OUT)', 2, 2, 'Logistics', ResourceLoader.load(':/buildings/LiftOut.png'), ResourceLoader.load(':/building_icons/ConveyorLiftMK1_512.png')),
+    'Splitter': BuildingType('Splitter', 4, 4, 'Logistics', ResourceLoader.load(':/buildings/Splitter.png'), ResourceLoader.load(':/building_icons/IconDesc_ConveyorSplitter_512.png')),
+    'Merger': BuildingType('Merger', 4, 4, 'Logistics', ResourceLoader.load(':/buildings/Merger.png'), ResourceLoader.load(':/building_icons/IconDesc_ConveyorMerger_512.png')),
+    'Pipe Junction': BuildingType('Pipe Junction', 4, 4, 'Logistics', ResourceLoader.load(':/buildings/PipeJunction.png'), ResourceLoader.load(':/building_icons/PipelineJunction_512.png')),
 
     # Organisation
-    'Storage container': BuildingType('Storage container', 10, 5, 'Organisation', './slapp/resources/StorageContainer.png'),
+    'Storage container': BuildingType('Storage container', 10, 5, 'Organisation', ResourceLoader.load(':/buildings/StorageContainer.png'), ResourceLoader.load(':/building_icons/IconDesc_StorageContainer_512.png')),
 
     # Other
-    'AWESOME Sink': BuildingType('AWESOME Sink', 16, 13, 'Other', './slapp/resources/Sink.png'),
+    'AWESOME Sink': BuildingType('AWESOME Sink', 16, 13, 'Other', ResourceLoader.load(':/buildings/Sink.png'), ResourceLoader.load(':/building_icons/ResourceSink_512.png')),
 }
 
 class DiscreteElement:
@@ -86,17 +88,16 @@ class DiscreteElement:
         """Rotate the building 90 degrees counterclockwise."""
         self.rotation = self.rotation.rotate_counterclockwise()
 
-    def to_dict(self) -> dict:
+    def serialize(self) -> None:
         return {
-            "type": self.type.name,  # or some unique identifier
-            "position": {"x": self.position.x, "y": self.position.y},
-            "rotation": self.rotation.value
+            'type': self.type.name,
+            'position': { 'x': self.position.x, 'y': self.position.y },
+            'rotation': self.rotation.value
         }
 
     @classmethod
-    def from_dict(cls, data: dict, type_lookup: dict) -> "DiscreteElement":
-        # type_lookup maps type name to BuildingType
-        type_obj = type_lookup[data["type"]]
-        pos = Position(data["position"]["x"], data["position"]["y"])
-        rot = Rotation(data["rotation"])
+    def deserialize(cls, data: dict) -> 'DiscreteElement':
+        type_obj = building_types[data['type']]
+        pos = Position(data['position']['x'], data['position']['y'])
+        rot = Rotation(data['rotation'])
         return cls(type_obj, pos, rot)

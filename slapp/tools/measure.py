@@ -5,7 +5,7 @@ from PySide6.QtGui import QMouseEvent, QPen, QColor, QFont, QPainterPath
 from PySide6.QtWidgets import QGraphicsPathItem
 
 from slapp.editor.settings import Settings
-from slapp.editor.tools.tool_base import EditorTool, EditorContext
+from slapp.tools.tool_base import EditorTool, EditorContext
 
 
 class MeasurementTool(EditorTool):
@@ -24,7 +24,7 @@ class MeasurementTool(EditorTool):
         self.path = QPainterPath()
         self.path_item = QGraphicsPathItem(self.path)
         self.path_item.setPen(QPen(QColor('lightgray'), 2))
-        self.context.add_item(self.path_item)
+        self.context.add_preview_item(self.path_item)
         self.draw_rulers()
 
     #region
@@ -95,5 +95,5 @@ class MeasurementTool(EditorTool):
         return QPointF(snapped_x, snapped_y)
 
     def cancel(self) -> None:
-        self.context.remove_item(self.path_item)
+        self.context.remove_preview_item(self.path_item)
         self.context.exit_tool()

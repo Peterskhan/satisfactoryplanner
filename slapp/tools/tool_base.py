@@ -15,21 +15,27 @@ class EditorContext:
 
     def add_item(self, item) -> None:
         """Add an item to the scene."""
-        self.scene.addItem(item)
+        self.scene.add_item(item)
+
+    def add_preview_item(self, item) -> None:
+        self.scene.add_preview_item(item)
 
     def remove_item(self, item) -> None:
         """Remove an item from the scene."""
-        self.scene.removeItem(item)
+        self.scene.remove_item(item)
+
+    def remove_preview_item(self, item) -> None:
+        self.scene.remove_preview_item(item)
 
     def layout(self):
-        """Get the FactoryLayout of the scene."""
+        """Get the Layout of the scene."""
         return self.scene.layout
 
     def last_mouse_scene_position(self) -> QPointF:
         """Get the last known scene position of the mouse."""
         return self.last_mouse_scene_pos
 
-    def set_lat_mouse_scene_position(self, position: QPointF) -> None:
+    def set_last_mouse_scene_position(self, position: QPointF) -> None:
         """Set the last known scene position of the mouse."""
         self.last_mouse_scene_pos = position
 

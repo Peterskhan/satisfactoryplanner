@@ -3,8 +3,8 @@ from PySide6.QtGui import QMouseEvent, QKeyEvent, QColor
 from PySide6.QtWidgets import QGraphicsColorizeEffect
 
 from slapp.editor.settings import Settings
-from slapp.editor.tools.tool_base import EditorTool, EditorContext
-from slapp.editor.items.linear import LinearItem
+from slapp.tools.tool_base import EditorTool, EditorContext
+from slapp.items.linear import LinearItem
 from slapp.core.linear import *
 
 
@@ -26,16 +26,10 @@ class LinearPlacementTool(EditorTool):
         self.preview_item.update_from_instance()
         self.preview_item.setOpacity(0.4)
         self.preview_item.setZValue(9999)
-        self.context.add_item(self.preview_item)
+        self.context.add_preview_item(self.preview_item)
 
         self.snap_preview_to_cursor()
         self.preview_item.update_from_instance()
-
-    def activate(self) -> None:
-        pass
-
-    def deactivate(self) -> None:
-        pass
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """Handle mouse press events."""
@@ -67,11 +61,9 @@ class LinearPlacementTool(EditorTool):
 
     def cancel(self) -> None:
         """Cancels the placement."""
-        self.context.remove_item(self.preview_item)
         instance = self.preview_item.instance.clone()
-        self.context.layout().add_line(instance)
-        item = LinearItem(instance)
-        self.context.add_item(item)
+        self.context.add_item(LinearItem(instance))
+        self.context.remove_preview_item(self.preview_item)
         self.preview_item = None
         self.context.exit_tool()
 

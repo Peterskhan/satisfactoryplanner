@@ -84,13 +84,13 @@ class LinearElement:
             self._nodes.append(self._preview_node)
             self._preview_node = None
 
-    def to_dict(self) -> dict:
+    def serialize(self) -> dict:
         return {
             'type': self.type.name,
             'nodes': [{'x': node.x, 'y': node.y} for node in self._nodes]
         }
 
     @classmethod
-    def from_dict(cls, data: dict, type_lookup: dict) -> 'LinearElement':
-        type_obj = type_lookup[data['type']]
+    def deserialize(cls, data: dict) -> 'LinearElement':
+        type_obj = line_types[data['type']]
         return cls(type_obj, [Position(node['x'], node['y']) for node in data['nodes']])
