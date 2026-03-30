@@ -18,8 +18,8 @@ class MinimapView(QGraphicsView):
         ClockSource.get_clock('minimap_update_clock', 33).timeout.connect(
             lambda: self.viewport().update())
 
-    def drawBackground(self, painter, rect):
-        super().drawBackground(painter, rect)
+    def drawForeground(self, painter, rect):
+        super().drawForeground(painter, rect)
 
         # Map the main view's viewport rect to scene coordinates
         scene_rect = self.main_view.mapToScene(self.main_view.viewport().rect()).boundingRect()

@@ -18,7 +18,7 @@ class MeasurementTool(EditorTool):
     def __init__(self, context: EditorContext) -> None:
         """Initialize the MeasurementTool."""
         self.context = context
-        self.points = [self.snap(context.last_mouse_scene_position())]
+        self.points = [self.snap(context.mouse_scene_position())]
         self.state = self.State.DRAW
         self.font = QFont("Arial", 64)
         self.path = QPainterPath()

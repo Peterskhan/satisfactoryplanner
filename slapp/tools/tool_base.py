@@ -7,7 +7,7 @@ class EditorContext:
     def __init__(self, scene: 'EditorScene') -> None:
         """Initialize the EditorContext."""
         self.scene = scene
-        self.last_mouse_scene_pos = QPointF(0, 0)
+        self.mouse_scene_pos = QPointF(0, 0)
 
     def exit_tool(self):
         """Instruct the scene to exit the current tool."""
@@ -31,13 +31,13 @@ class EditorContext:
         """Get the Layout of the scene."""
         return self.scene.layout
 
-    def last_mouse_scene_position(self) -> QPointF:
+    def mouse_scene_position(self) -> QPointF:
         """Get the last known scene position of the mouse."""
-        return self.last_mouse_scene_pos
+        return self.mouse_scene_pos
 
-    def set_last_mouse_scene_position(self, position: QPointF) -> None:
+    def set_mouse_scene_position(self, position: QPointF) -> None:
         """Set the last known scene position of the mouse."""
-        self.last_mouse_scene_pos = position
+        self.mouse_scene_pos = position
 
 class EditorTool(QObject):
     """Abstract interface for Editor placement tools."""

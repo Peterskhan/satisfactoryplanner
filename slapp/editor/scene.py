@@ -11,7 +11,7 @@ from slapp.items.linear import LinearItem
 from slapp.core.factory import Factory
 from slapp.core.layout import Layout
 from slapp.core.floor import Floor
-from slapp.core.discrete import BuildingType, Position
+from slapp.core.discrete import BuildingType
 from slapp.core.linear import LineType, line_types
 from slapp.editor.settings import Settings
 
@@ -106,20 +106,18 @@ class EditorScene(QGraphicsScene):
     def paste_current_selection(self):
         if self.clipboard_layout:
             layout_to_paste = self.clipboard_layout.clone()
-            self._current_floor.layout.add_sublayout(layout_to_paste, offset_x=4, offset_y=4)
+            self._current_floor.layout.add_sublayout(layout_to_paste, offset=QPointF(4, 4))
             items_to_paste = [DiscreteItem(instance) for instance in layout_to_paste.buildings]
 
             self.clearSelection()
             for item in items_to_paste:
                 self.add_item(item, add_to_layout=False)
                 item.setSelected(True)
-                item.update_from_instance()
 
     def rotate_current_selection(self):
         for item in self.selectedItems():
             if isinstance(item, DiscreteItem):
-                item.instance.rotate_clockwise()
-                item.update_from_instance()
+                item.instance.rotate(90)
 
     def initialize_layout(self):
 
@@ -217,15 +215,14 @@ class EditorScene(QGraphicsScene):
         self.tool = tool
 
     @staticmethod
-    def scene_to_world(scene_pos: QPointF) -> Position:
-        return Position(scene_pos.x() / Settings.PIXELS_PER_METER,
-                        scene_pos.y() / Settings.PIXELS_PER_METER)
+    def scene_to_world(scene_pos: QPointF) -> QPointF:
+        return scene_pos / Settings.PIXELS_PER_METER
 
     @staticmethod
-    def scene_to_world_snapped(scene_pos: QPointF) -> Position:
+    def scene_to_world_snapped(scene_pos: QPointF) -> QPointF:
         x = round(scene_pos.x() / Settings.PIXELS_PER_METER)
         y = round(scene_pos.y() / Settings.PIXELS_PER_METER)
-        return Position(x, y)
+        return QPointF(x, y)
 
     def build_conveyor(self):
         self.set_preview_type(line_types['Conveyor belt'])
@@ -256,10 +253,10 @@ class EditorScene(QGraphicsScene):
         scene_pos = event.scenePos()
         world_pos = self.scene_to_world(scene_pos)
         snapped_world_pos = self.scene_to_world_snapped(scene_pos)
-        self.mouse_scene_position_changed.emit(f'Scene Position: ({scene_pos.x():.2f}, {scene_pos.y():.2f}) '
-                                               f'World Position: ({world_pos.x:.2f}, {world_pos.y:.2f}) '
-                                               f'Snapped World Position: ({snapped_world_pos.x}, {snapped_world_pos.y})')
-        self.context.set_last_mouse_scene_position(event.scenePos())
+        self.mouse_scene_position_changed.emit(f'Scene: ({scene_pos.x():.2f}, {scene_pos.y():.2f}) '
+                                               f'World: ({world_pos.x():.2f}, {world_pos.y():.2f}) '
+                                               f'Snapped: ({snapped_world_pos.x()}, {snapped_world_pos.y()})')
+        self.context.set_mouse_scene_position(event.scenePos())
         super().mouseMoveEvent(event)
 
     def set_grid_visible(self, visible: bool) -> None:

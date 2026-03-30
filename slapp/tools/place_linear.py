@@ -23,13 +23,10 @@ class LinearPlacementTool(EditorTool):
         self.context = context
         self.preview_item = LinearItem(LinearElement(type))
         self.preview_item.instance.add_preview_node()
-        self.preview_item.update_from_instance()
         self.preview_item.setOpacity(0.4)
         self.preview_item.setZValue(9999)
         self.context.add_preview_item(self.preview_item)
-
         self.snap_preview_to_cursor()
-        self.preview_item.update_from_instance()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """Handle mouse press events."""
@@ -40,7 +37,6 @@ class LinearPlacementTool(EditorTool):
             self.preview_item.instance.accept_preview_node()
             self.preview_item.instance.add_preview_node()
             self.snap_preview_to_cursor()
-            self.preview_item.update_from_instance()
 
         elif event.button() == Qt.RightButton:
             self.cancel()
@@ -52,7 +48,6 @@ class LinearPlacementTool(EditorTool):
 
         self.snap_preview_to_cursor()
         self.check_collisions()
-        self.preview_item.update_from_instance()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         """Handle key press events."""
@@ -67,10 +62,6 @@ class LinearPlacementTool(EditorTool):
         self.preview_item = None
         self.context.exit_tool()
 
-    def rotate(self) -> None:
-        """Rotations are not handled."""
-        pass
-
     def check_collisions(self):
         if self.preview_item:
             colliding = self.preview_item.is_colliding()
@@ -81,7 +72,7 @@ class LinearPlacementTool(EditorTool):
 
     def snap_preview_to_cursor(self):
         scale = Settings.PIXELS_PER_METER
-        snapped_x = round(self.context.last_mouse_scene_position().x() / scale) * scale
-        snapped_y = round(self.context.last_mouse_scene_position().y() / scale) * scale
-        self.preview_item.instance.move_preview_node_to(Position(round(snapped_x / scale),
-                                                                 round(snapped_y / scale)))
+        snapped_x = round(self.context.mouse_scene_position().x() / scale) * scale
+        snapped_y = round(self.context.mouse_scene_position().y() / scale) * scale
+        self.preview_item.instance.move_preview_node_to(QPointF(round(snapped_x / scale),
+                                                                round(snapped_y / scale)))

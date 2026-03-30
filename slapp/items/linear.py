@@ -7,7 +7,7 @@ from slapp.items.selectable import SelectableGraphicsItem
 from slapp.core.linear import LinearElement
 import math
 
-def build_path(points, ppm, radius_units=1):
+def build_path(points: list[QPointF], ppm, radius_units=1):
 
     def unit(vx, vy):
         length = math.hypot(vx, vy)
@@ -17,7 +17,7 @@ def build_path(points, ppm, radius_units=1):
         return math.degrees(math.atan2(-vy, vx))
 
     path = QPainterPath()
-    points = [QPointF(p.x, p.y) * ppm for p in points]
+    points = [p * ppm for p in points]
     if not points:
         return path
 
@@ -39,7 +39,7 @@ def build_path(points, ppm, radius_units=1):
             path.lineTo(B)
             continue
 
-        # Draw an arc only for (approximately) 90° turns. For straight or non-90° turns, draw a straight corner.
+        # Draw an arc only for (approximately) 90deg turns. For straight or non-90deg turns, draw a straight corner.
         dot = dx1 * dx2 + dy1 * dy2
         if abs(dot) < 1e-6:
             v1x, v1y = unit(dx1, dy1)
@@ -75,6 +75,9 @@ class LinearItem(QGraphicsPathItem, SelectableGraphicsItem):
         self.width = Settings.PIXELS_PER_METER * (instance.type.width - 0.5)
         self.instance = instance
         self.phase = 0
+        self.setZValue(-1)
+
+        self.instance.changed.connect(self.update_from_model)
 
         self.setPen(Qt.NoPen)  # we paint manually
         path = build_path(self.instance.nodes(), Settings.PIXELS_PER_METER)
@@ -82,8 +85,9 @@ class LinearItem(QGraphicsPathItem, SelectableGraphicsItem):
 
         ClockSource.get_clock('conveyor_animation_clock', 33).timeout.connect(self.animate)
 
-    def update_from_instance(self):
+    def update_from_model(self):
         path = build_path(self.instance.nodes(), Settings.PIXELS_PER_METER)
+        self.prepareGeometryChange()
         self.setPath(path)
 
     def animate(self):
@@ -121,8 +125,7 @@ class LinearItem(QGraphicsPathItem, SelectableGraphicsItem):
         pen = QPen(QColor(200, 200, 200), 20)
         painter.setPen(pen)
         for node in self.instance.nodes():
-            pos = QPointF(node.x * Settings.PIXELS_PER_METER, node.y * Settings.PIXELS_PER_METER)
-            painter.drawPoint(pos)
+            painter.drawPoint(node * Settings.PIXELS_PER_METER)
 
     def shape(self):
         return self._body_path()

@@ -3,6 +3,4 @@
  - Undo/Redo
 
 ### Code TODO
- - Fix half-meter placement
  - Fix conveyor code
- - Signals

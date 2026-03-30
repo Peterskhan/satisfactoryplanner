@@ -1,3 +1,4 @@
+from PySide6.QtCore import QPointF
 from slapp.core.discrete import DiscreteElement, building_types
 from slapp.core.linear import LinearElement, line_types
 
@@ -25,9 +26,9 @@ class Layout:
             new_layout.add_element(building.clone())
         return new_layout
 
-    def add_sublayout(self, sublayout: 'Layout', offset_x: int, offset_y: int) -> None:
+    def add_sublayout(self, sublayout: 'Layout', offset: QPointF) -> None:
         for building in sublayout.buildings:
-            building.translate(offset_x, offset_y)
+            building.translate(offset)
             self.add_element(building)
 
     def add_element(self, instance: DiscreteElement | LinearElement) -> None:

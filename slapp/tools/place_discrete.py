@@ -20,7 +20,7 @@ class DiscretePlacementTool(EditorTool):
 
     def __init__(self, context: EditorContext, type: 'BuildingType'):
         self.context = context
-        self.preview_item = DiscreteItem(DiscreteElement(type, Position(0, 0), Rotation.DEG_0))
+        self.preview_item = DiscreteItem(DiscreteElement(type, QPointF(0, 0)))
         self.preview_item.setOpacity(0.4)
         self.preview_item.setZValue(9999)
         self.context.add_preview_item(self.preview_item)
@@ -44,7 +44,6 @@ class DiscretePlacementTool(EditorTool):
 
         self.snap_preview_to_cursor()
         self.check_collisions()
-        self.preview_item.update_from_instance()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         """Handle key press events."""
@@ -53,8 +52,11 @@ class DiscretePlacementTool(EditorTool):
 
     def rotate(self) -> None:
         if self.preview_item:
-            self.preview_item.instance.rotate_clockwise()
-            self.preview_item.update_from_instance()
+            self.preview_item.instance.rotate()
+
+            # We need to trigger a movement as well for snapping to take effect
+            self.preview_item.instance.move_to(
+                self.context.mouse_scene_position() / Settings.PIXELS_PER_METER)
 
     def cancel(self) -> None:
         self.context.remove_preview_item(self.preview_item)
@@ -70,9 +72,5 @@ class DiscretePlacementTool(EditorTool):
             self.preview_item.setGraphicsEffect(effect)
 
     def snap_preview_to_cursor(self):
-        scale = Settings.PIXELS_PER_METER
-        snapped_x = round(self.context.last_mouse_scene_position().x() / scale) * scale
-        snapped_y = round(self.context.last_mouse_scene_position().y() / scale) * scale
-        self.preview_item.setPos(snapped_x, snapped_y)
-        self.preview_item.instance.move_to(round(snapped_x / scale),
-                                           round(snapped_y / scale))
+        self.preview_item.instance.move_to(
+            self.context.mouse_scene_position() / Settings.PIXELS_PER_METER)
